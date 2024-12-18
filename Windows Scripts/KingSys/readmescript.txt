@@ -1,0 +1,1 @@
+some stuff still in development, fixed some old bugs, might be sum glitches still, however should be fine (don't use hazardous marked ones unles ur me) also new features added from below line. They add more reliabiliety 
