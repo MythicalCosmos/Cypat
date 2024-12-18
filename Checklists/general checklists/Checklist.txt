@@ -1,0 +1,63 @@
+1) Run Updates and patches first
+ 
+2) Install Virus and Malware Protection and StartScans
+ 
+3) Make sure Firewalls are turned on
+ 
+4) Remove users that are not needed
+ 
+5) Remove Prohibited .MP3 and video media files
+ 
+6) Make sure Windows Service Packs are installed
+ 
+7) Set Minimum Password Length
+ 
+8) Turn on automatic updates
+ 
+9) Stop Web Server Clients such as Telnet, TFTP VNC. Turn off IIS (Internet Information
+Services)
+ 
+10) Configure a maximum password age
+ 
+11) Make sure all user accounts are password protected
+ 
+12) Disable File Sharing between accounts
+ 
+13) Stop Remote Registry services
+ 
+14) Disable Guest Account
+ 
+15) Remove unnecessary testing accounts
+ 
+16) Configure pass pol
+ 
+17) Look for and remove password crackers, keyloggers, network mappers, security scanners, web
+server scanners, port scanner, protocol analyzer, etc,
+ 
+18) Rename user accounts when generic such as "user"
+ 
+19) Change common passwords such as "password" to something more secure
+ 
+20) Make sure that only users specified as administrators are in fact administrators
+ 
+21) Check computer proof of ownership and naming of computer
+ 
+22) Valid copy of Windows or other OS?
+ 
+23) Remove Games that should not be on the computer
+ 
+24) Remove software such as Limewire and NapsterPier to Pier File Sharing Softwares
+ 
+25) Make sure the computer does not stay awake and open after someone has walked away.
+
+
+*secpol
+
+* 5 passwords remembered
+90 days for users, 30 for admins
+10-30 days
+8 characters
+
+*turn off rdp
+
+*shared files

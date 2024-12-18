@@ -1,0 +1,1 @@
+this checklist is composed of pictures but is detailed and will be important as long as you know what you are doing, also access on laptop as it would be easier (for me)

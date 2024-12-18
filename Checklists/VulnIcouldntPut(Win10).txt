@@ -1,0 +1,24 @@
+in local group policy editor
+open administrative templates - windows components - rdp services - session host - security - require use of specific security layer - security layer ssl
+
+
+!!! Usually An Rdp Envo
+
+
+
+
+
+!!!!!!!!!!!!!!!! Bit locker drive encryption ON!!! (most important for defensive countermeasures). ALWAYS PUT ON
+
+
+
+
+Rdp Envo agin
+
+Depends on situation, ask me for these options don't go enabling shit
+
+
+RDP Requires secure RPC communication: Enabled
+RDP Group logon permissions check passed
+RDP SSL security
+Firefox Accounts disabled

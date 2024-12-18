@@ -1,0 +1,546 @@
+Notes
+Assume root permissions are needed for most commands. You can use sudo or become root with su.
+I would no longer recommend running apt-get dist-upgrade in competition. They may call it intelligent, but it has a bad track record of breaking critical services.
+This script heavily borrows from Forty-Bot Linux Checklist
+
+Checklist
+
+
+Read the readme
+Take notes on neccessary services, users, and any other important information.
+
+
+Do the Forensics Questions
+Forensics questions can point you towards other vulnerabilities. Keep this in mind. (ex: a media file, find a hidden message, find a backdoor, etc)
+
+
+Account Configuration
+
+
+Lock the root account
+$ passwd -l root
+
+
+Disable the guest account in /etc/lightdm/lightdm.conf
+
+allow-guest=false
+greeter-hide-users=true
+greeter-show-manual-login=true
+autologin-user=none
+
+
+
+
+Compare /etc/passwd and /etc/group to the readme
+Look out for uid 0 and hidden users!
+
+
+Delete unauthorized users
+
+$ userdel -r $user
+$ groupdel $user
+
+
+
+
+Add users
+
+$ useradd -G $group1,$group2 $user
+$ passwd $user
+
+
+
+
+Remove unauthorized users from adm and groups
+$ gpasswd -d $user $group
+
+
+Add authorized users to groups
+$ gpasswd -a $user $group
+
+
+Check /etc/sudoers and /etc/sudoers.d for unauthorized users and groups.
+
+
+Remove any instances of nopasswd and !authenticate, these allow sudo use without authentication
+
+
+Any commands listed can be run without a password (ex: /bin/chmod)
+
+
+Group lines are preceded by %
+
+
+
+
+Wait to change user passwords until after password policy!
+
+
+
+
+Password Policy
+
+
+Change password expiration requirements in /etc/login.defs
+
+PASS_MAX_DAYS 30
+PASS_MIN_DAYS 7
+PASS_WARN_AGE 12
+
+
+
+
+Add password history, minimum password length, and password complexity requirements in /etc/pam.d/common-password
+INSTALL CRACKLIB PRIOR TO CHANGING COMMON-PASSWORD
+$ apt-get install libpam-cracklib
+
+password	required	pam_unix.so obscure sha512 remember=12 use_authtok
+password	required	pam_cracklib.so retry=3 minlen=13 difok=4 dcredit=-1 ucredit=-1 ocredit=-1 lcredit=-1 maxrepeat=3
+
+
+
+
+Enforce account lockout policy in /etc/pam.d/common-auth
+MUST COME FIRST
+auth	required	pam_tally2.so deny=5 audit unlock_time=1800 onerr=fail even_deny_root
+
+
+Change account expiry defaults in /etc/default/useradd
+
+EXPIRE=30
+INACTIVE=30
+
+
+
+
+Check minimum and maximum password ages in /etc/shadow
+Use chage to change password expiration.
+$ chage -m $MIN -M $MAX $user
+
+
+CHANGE PASSWORDS---YOU WILL BE LOCKED OUT IF YOU DON'T!
+Be sure to record new user passwords!
+$ passwd $user
+
+
+
+
+Check for unauthorized media
+
+
+Find media files
+$ find / -iname "*.$extension"
+
+
+Look through user home directories for any unauthorized media
+$ ls -alR /home
+There also may be unauthorized network shares not under the /home directory
+
+
+
+
+Network Security
+
+
+Enable and configure UFW
+
+$ ufw default deny incoming
+$ ufw default allow outgoing
+$ ufw allow $port/service
+$ ufw delete $rule
+$ ufw logging on
+$ ufw logging high
+$ ufw enable
+
+
+
+
+Check /etc/hosts file for suspicious entries
+
+
+Prevent IP Spoofing
+$ echo "nospoof on" >> /etc/host.conf
+
+
+
+
+Package Management
+
+
+Verify the repositories listed in /etc/apt/sources.list
+
+
+Verify Repositories
+
+
+Check apt repository policy
+$ apt-cache policy
+
+
+Check apt trusted keys
+$ apt-key list
+
+
+
+
+Updates
+
+$ apt-get update
+$ apt-get -y upgrade
+$ apt-get -y dist-upgrade
+
+
+
+
+Enable automatic updates
+
+
+Install unattended-upgrades
+$ apt-get install unattended-upgrades
+
+
+Reconfigure unattended-upgrades
+$ dpkg-reconfigure unattended-upgrades
+
+
+Edit /etc/apt/apt.conf.d/20auto-upgrades
+
+APT::Periodic::Update-Package-Lists "1";
+APT::Periodic::Download-Upgradeable-Packages "1";
+APT::Periodic::AutocleanInterval "7";
+APT::Periodic::Unattended-Upgrade "1";
+
+
+
+
+Edit /etc/apt/apt.conf.d/50auto-upgrades
+
+Unattended-Upgrade::Allowed-Origins {
+	"${distro_id} stable";
+	"${distro_id} ${distro_codename}-security";
+	"${distro_id} ${distro_codename}-updates";
+};
+
+Unattended-Upgrade::Package-Blacklist {
+	"libproxy1v5";		# since the school filter blocks the word proxy
+};
+
+
+
+
+Look for points for packages mentioned in the README, along with bash (if vulnerable to Shellshock), the kernel, sudo, and sshd
+
+
+Verify binaries match with debsums
+
+
+Install debsums
+$ apt-get install debsums
+
+
+Generate checksums for packages that don't come with them
+$ debsums -g
+
+
+Verify checksums for all binaries
+$ debsums -c
+
+
+Verify checksums for binaries and config files (false positives for legitimate changes by us)
+$ debsums -a
+
+
+
+
+Remove unauthorized and unused packages
+
+
+Use deborphan to detect unneccessary packages
+
+
+Install deborphan
+$ apt-get install deborphan
+
+
+Search for unneccessary packages
+$ deborphan --guess-all
+
+
+Delete unneccessary data packages
+$ deborphan --guess-data | xargs sudo apt-get -y remove --purge
+
+
+Delete unneccessary libraries
+$ deborphan | xargs sudo apt-get -y remove --purge
+
+
+
+
+Look for hacking tools, games, and other unwanted/unneccessary packages
+
+$ apt-cache policy $package
+$ which $package
+$ dpkg-query -l | grep -E '^ii' | less
+
+
+
+
+Ensure all services are required
+service --status-all
+
+
+BAD STUFF
+john, nmap, vuze, frostwire, kismet, freeciv, minetest, minetest-server, medusa, hydra, truecrack, ophcrack, nikto, cryptcat, nc, netcat, tightvncserver, x11vnc, nfs, xinetd
+POSSIBLY BAD STUFF
+samba, postgresql, sftpd, vsftpd, apache, apache2, ftp, mysql, php, snmp, pop3, icmp, sendmail, dovecot, bind9, nginx
+MEGA BAD STUFF
+telnet, rlogind, rshd, rcmd, rexecd, rbootd, rquotad, rstatd, rusersd, rwalld, rexd, fingerd, tftpd, telnet, snmp, netcat, nc
+
+
+
+
+Service & Application Hardening
+
+
+Configure OpenSSH Server in /etc/ssh/sshd_config
+
+Protocol 2
+LogLevel VERBOSE
+X11Forwarding no
+MaxAuthTries 4
+IgnoreRhosts yes
+HostbasedAuthentication no
+PermitRootLogin no
+PermitEmptyPasswords no
+
+
+
+
+Harden Firefox
+
+Block Popups
+
+
+
+Configure apache2 in /etc/apache2/apache2.conf
+
+ServerSignature Off
+ServerTokens Prod
+
+
+
+
+
+
+Backdoor Detection and Removal
+
+
+ss -ln
+
+
+If a port has 127.0.0.1:$port in its line, that means it's connected to loopback and isn't exposed. Otherwise, there should only be ports which are specified in the readme open (but there probably will be tons more).
+
+
+For each open port which should be closed
+
+
+Find the program using the port
+$ lsof -i $port
+
+
+Locate where the program is running from
+$ whereis $program
+
+
+Find what package owns the file
+$ dpkg -S $location
+
+
+Remove the responsible package
+$ apt-get purge $package
+
+
+If there is no package, delete the file and kill the processes
+$ rm $location; killall -9 $program
+
+
+Verify the port is closed
+$ ss -l
+
+
+
+
+
+
+Cron
+
+
+Check your user's crontabs
+$ crontab -e
+
+
+Check /etc/cron.*/, /etc/crontab, and /var/spool/cron/crontabs/
+
+
+Check init files in /etc/init/ and /etc/init.d/
+
+
+Remove contents of /etc/rc.local
+$ echo "exit 0" > /etc/rc.local
+
+
+Check user crontabs
+$ crontab -u $user -l
+
+
+Deny users use of cron jobs
+$ echo "ALL" >> /etc/cron.deny
+
+
+
+
+Kernel Hardening
+
+
+Edit the /etc/sysctl.conf file
+
+fs.file-max = 65535
+fs.protected_fifos = 2
+fs.protected_regular = 2
+fs.suid_dumpable = 0
+kernel.core_uses_pid = 1
+kernel.dmesg_restrict = 1
+kernel.exec-shield = 1
+kernel.sysrq = 0
+kernel.randomize_va_space = 2
+kernel.pid_max = 65536
+net.core.rmem_max = 8388608
+net.core.wmem_max = 8388608
+net.core.netdev_max_backlog = 5000
+net.ipv4.tcp_rmem = 10240 87380 12582912
+net.ipv4.tcp_window_scaling = 1
+net.ipv4.tcp_wmem = 10240 87380 12582912
+net.ipv4.conf.all.accept_redirects = 0
+net.ipv4.conf.all.accept_source_route = 0
+net.ipv4.conf.all.log_martians = 1
+net.ipv4.conf.all.redirects = 0
+net.ipv4.conf.all.rp_filter = 1
+net.ipv4.conf.all.secure_redirects = 0
+net.ipv4.conf.all.send_redirects = 0
+net.ipv4.conf.default.accept_redirects = 0
+net.ipv4.conf.default.accept_source_route = 0
+net.ipv4.conf.default.log_martians = 1
+net.ipv4.conf.default.rp_filter = 1
+net.ipv4.conf.default.secure_redirects = 0
+net.ipv4.conf.default.send_redirects = 0
+net.ipv4.icmp_echo_ignore_all = 1
+net.ipv4.icmp_echo_ignore_broadcasts = 1
+net.ipv4.icmp_ignore_bogus_error_responses = 1
+net.ipv4.ip_forward = 0
+net.ipv4.ip_local_port_range = 2000 65000
+net.ipv4.tcp_max_syn_backlog = 2048
+net.ipv4.tcp_synack_retries = 2
+net.ipv4.tcp_syncookies = 1
+net.ipv4.tcp_syn_retries = 5
+net.ipv4.tcp_timestamps = 9
+
+# Disable IPv6
+net.ipv6.conf.all.disable_ipv6 = 1
+net.ipv6.conf.default.disable_ipv6 = 1
+net.ipv6.conf.lo.disable_ipv6 = 1
+
+# Incase IPv6 is necessary
+net.ipv6.conf.default.router_solicitations = 0
+net.ipv6.conf.default.accept_ra_rtr_pref = 0
+net.ipv6.conf.default.accept_ra_pinfo = 0
+net.ipv6.conf.default.accept_ra_defrtr = 0
+net.ipv6.conf.default.autoconf = 0
+net.ipv6.conf.default.dad_transmits = 0
+net.ipv6.conf.default.max_addresses = 1
+
+
+
+
+Load new sysctl settings
+$ sysctl -p
+
+
+
+
+Antivirus
+
+
+Install clamav, chkrootkit, and rkhunter
+$ apt-get install clamav chkrootkit rkhunter
+
+
+Run ClamAV
+
+$ freshclam
+$ freshclam --help
+
+
+
+
+Run chkrootkit
+$ chkrootkit -l
+
+
+Run RKHunter
+
+$ rkhunter --update
+$ rkhunter --propupd
+$ rkhunter -c --enable all --disable none
+
+
+
+
+Look through /var/log/rkhunter.log
+
+
+
+
+Audit the System with Lynis
+
+
+Install
+
+$ cd /usr/local
+$ git clone https://github.com/CISOfy/lynis
+$ chown -R 0:0 /usr/local/lynis
+
+
+
+
+Audit the system with Lynis
+
+$ cd /usr/local/lynis
+$ lynis audit system
+
+
+
+
+Look through /var/log/lynis-report.dat for warnings and suggestions
+$ grep -E 'warning|suggestion' | sed -e 's/warning\[\]\=//g' | sed -e 's/suggestion\[\]\=//g'
+
+
+
+
+Configure Auditd
+
+
+Install
+$ apt-get install auditd
+
+
+Enable
+$ auditctl -e 1
+
+
+Configure with /etc/audit/auditd.conf
+
+
+
+
+
+Other Checklists
